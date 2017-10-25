@@ -5,21 +5,26 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
+import com.sun.javafx.scene.control.skin.FXVK.Type;
+
 import javafx.application.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import model.Input_Sorter;
 import model.Message;
 import model.MessageType;
 
-public class MessageOrganizerGUI extends Application {
+public class MessageOrganizerGUI extends Application implements Observer {
 	public static void main(String[] args) {
 		launch();
 	}
@@ -30,7 +35,9 @@ public class MessageOrganizerGUI extends Application {
 	*/
 	
 	//private static File inputFile = new File("C:\\Users\\black\\Documents\\Arcticwolf_obsidian_Chat logs");
-	private static File inputFile = new File("input\\Arcticwolf_obsidian_Chat logs");//used for testing not actual live file
+	
+	private static File inputFile;// = new File("Input\\Arcticwolf_obsidian_Chat logs");//used for testing not actual live file
+	
 	private Input_Sorter sorter;
 	private BorderPane bpane;
 	
@@ -38,10 +45,25 @@ public class MessageOrganizerGUI extends Application {
 	private ObservableList<String> messages = FXCollections.observableArrayList();
 	private List<Message> messageList;
 	
+	Settings settings;
 	
 	public void start(Stage stage) throws Exception {
+		
+		settings = new Settings();
+		if(!settings.isNewFile() && settings.getFileLocation() != null) {
+			inputFile = new File(settings.getFileLocation());
+		}
+		else {
+			FileChooser fileChooser = new FileChooser();
+			fileChooser.setTitle("Select Chat Log Location");
+			inputFile = fileChooser.showOpenDialog(stage);
+			if(inputFile == null)
+				return;
+			settings.setFileLocation(inputFile.getPath());
+		}
+		
 		sorter = new Input_Sorter(inputFile);
-		//sorter.addObserver(this);
+		sorter.addObserver(this);
 		
 		displayList = new ListView();
 		
@@ -73,10 +95,12 @@ public class MessageOrganizerGUI extends Application {
 		displayList.setItems(messages);
 		messageList = sorter.getMessageList();
 		
-		showLastXMessages(MessageType.TRADE, 25);
+		showLastXMessages(MessageType.TRADE, 10);
 		
 		bpane = new BorderPane();
 		Scene scene = new Scene(bpane, 500, 800);
+		
+		stage.setOnCloseRequest(new closeSaveData());
 		
 		bpane.setCenter(displayList);
 		stage.setScene(scene);
@@ -109,23 +133,19 @@ public class MessageOrganizerGUI extends Application {
 
 	@Override
 	public void update(Observable arg0, Object arg1) {
-		List<Message> messageList = sorter.getMessageList();
-		int curCheck = messageList.size();
-		int currentAmountOfMessages = 0;
-		newMessages = FXCollections.observableArrayList();
-		
-		while(currentAmountOfMessages < amountOfMessagesOnScreen) {
-			if(curCheck == -1) {
-				displayList.setItems(newMessages);
-				return;
-			}
-			if(messageList.get(curCheck).getType() == desiredType) {
-				newMessages.add(messageList.get(curCheck).toString());
-				currentAmountOfMessages++;
-			}
-			curCheck--;
-		}
-		displayList.setItems(newMessages);
+		messageList = sorter.getMessageList();
+		showLastXMessages(settings.getDesiredType(), settings.getNumbOfMessages());
 	}
 
+	/**
+	 * saves the settings when the user closes the application
+	 *
+	 */
+	private class closeSaveData implements EventHandler<WindowEvent>{
+
+		@Override
+		public void handle(WindowEvent arg0) {
+			settings.saveSettings();
+			
+		}}
 }
