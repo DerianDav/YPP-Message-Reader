@@ -10,12 +10,26 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Scanner;
 
+/**
+ * Handles the parsing of any data in the input file and monitors the input file for
+ * any new information that is being written to it. This parses the information as 
+ * the input file gets new data
+ * @author derian
+ *
+ */
 public class Input_Sorter extends Observable{
 	private File inputFile;
 	private Scanner sc;
 	private BufferedReader br;
 	private List<Message> messageList;
 
+	/**
+	 * Initially reads through the existing chat log file and sets up the LogMonitor
+	 * to check for any new data in a separate thread.
+	 * 
+	 * @param inputFile location of the chat log file
+	 * @throws IOException thrown if the file deos not exist
+	 */
 	public Input_Sorter(File inputFile) throws IOException {
 		this.inputFile = inputFile;
 		br = new BufferedReader(new FileReader(inputFile));
@@ -35,54 +49,11 @@ public class Input_Sorter extends Observable{
 
 	}
 
-
-	/* OLD CODE
-	private void scanFile() {
-
-
-		while(sc.hasNextLine()) {
-	//	for(int i = 0; i < 50; i++) {
-			LocalTime messageTime;
-			String sender;
-			MessageType type;
-			String message;
-			String temp = sc.next();
-
-			if(temp.charAt(0) != '[' && temp.charAt(0) != '=') {
-				sc.nextLine();
-				continue;
-			}
-			//if a new day has occurred between message
-			while(temp.startsWith("===")){
-				temp = sc.nextLine();
-				temp = sc.next();
-			}
-			//first part of the message is the timestamp
-			messageTime = LocalTime.parse(temp.substring(1, temp.length()-1));
-			//second part of the the line is the user who is sending the message
-			sender = sc.next();
-			//followed by what type of message this is
-			type = parseMessageType(sc.next());
-			if(type == MessageType.NONE) {
-				sc.nextLine();
-				temp = "";
-				continue;
-			}
-			temp = sc.next();
-			//last part of the message is the message itself
-			if(temp.charAt(0) != '"')
-				temp = sc.nextLine();
-			else
-				temp += " " + sc.nextLine();
-			message = temp.substring(1, temp.length()-1);
-			if(message.charAt(0) == '"')
-				message = message.substring(1);
-
-			messageList.add(new Message(messageTime, sender, message, type));
-
-		}
-	}*/
-
+/**
+ * Parses the specified line into a message object and adds the object to the list of messages
+ *
+ * @param line the string you wish to parse into a mesage
+ */
 	private void parseLine(String line) {
 		LocalTime messageTime;
 		String sender;
@@ -132,6 +103,10 @@ public class Input_Sorter extends Observable{
 		lineScanner.close();
 	}
 
+	/**
+	 * prints the string version of the list of messages
+	 * Format: Date \n Tab MessageString
+	 */
 	private void printList() {
 		for(Message message: messageList) {
 			if(message.getType() == MessageType.TRADE)
@@ -139,6 +114,12 @@ public class Input_Sorter extends Observable{
 		}
 	}
 
+	/**
+	 * 
+	 * @param msg string that contains the string version of a messageType
+	 * @param sc the scanner associated with the origin of the msg 
+	 * @return the message type that was extracted from msg
+	 */
 	private MessageType parseMessageType(String msg, Scanner sc) {
 		if(msg.equals("trade"))
 			return MessageType.TRADE;
@@ -165,6 +146,12 @@ public class Input_Sorter extends Observable{
 
 	}
 
+	/**
+	 * Monitors any changes to the log file (input) and parses and new line
+	 * 
+	 * @author derian
+	 *
+	 */
 	private class LogMonitor implements Runnable{
 		public void run(){
 
@@ -189,7 +176,10 @@ public class Input_Sorter extends Observable{
 	}
 
 
-
+	/**
+	 * 
+	 * @return returns the list of messages
+	 */
 	public List<Message> getMessageList(){
 		return messageList;
 	}
